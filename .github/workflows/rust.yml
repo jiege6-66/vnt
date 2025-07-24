@@ -146,8 +146,8 @@ jobs:
               sudo ln -s /opt/musl_gcc/$MUSL_URI/bin/*gcc /usr/bin/
             fi
           else
-              rustup install 1.82
-              rustup default 1.82
+              rustup install nightly
+              rustup default nightly
           fi
           if [[ $TARGET =~ ^mips.*$ ]]; then
               # mips平台使用nightly版本
@@ -161,8 +161,8 @@ jobs:
                  cp -f $RUST_LIB_SRC/library/Cargo.lock $RUST_LIB_SRC/Cargo.lock
               fi 
           else
-              rustup install 1.82
-              rustup default 1.82
+              rustup install nightly
+              rustup default nightly
           fi
           rustup -V
           
