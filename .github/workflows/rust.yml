@@ -85,7 +85,7 @@ jobs:
     # needs: test
     runs-on: ${{ matrix.OS }}
     env:
-      NAME: vnt-cli # change with the name of your project
+      NAME: vnt-cli
       TARGET: ${{ matrix.TARGET }}
       OS: ${{ matrix.OS }}
       FEATURES: ${{ matrix.FEATURES }}
@@ -100,8 +100,8 @@ jobs:
             ~/.cargo/registry
             ./target
           key: build-cargo-registry-${{matrix.TARGET}}
-      - name: Use strawberry perl
-        if: startsWith(matrix.os, 'windows')
+      - name: Set env
+        if: matrix.OS == 'windows-latest'
         run: echo OPENSSL_SRC_PERL=C:/Strawberry/perl/bin/perl >> $GITHUB_ENV
       - name: List
         run: find ./
@@ -110,11 +110,11 @@ jobs:
           # dependencies are only needed on ubuntu as that's the only place where
           # we make cross-compilation
           rustup set auto-self-update disable
-          
+
           if [[ $OS =~ ^ubuntu.*$ ]]; then
             sudo apt-get update && sudo apt-get install clang llvm libc6-dev-i386 crossbuild-essential-arm64 crossbuild-essential-armhf musl-tools libboost-all-dev libc6-dev -y
             #  curl -s musl.cc | grep mipsel
-            case $TARGET in 
+            case $TARGET in [
               mipsel-unknown-linux-musl)
                 MUSL_URI=mipsel-linux-muslsf-cross
                 URL=mipsel-linux-muslsf
@@ -124,48 +124,45 @@ jobs:
                 ;;
               armv7-unknown-linux-musleabihf)
                 MUSL_URI=armv7l-linux-musleabihf-cross
-                ;;    
+                ;;
               armv7-unknown-linux-musleabi)
                 MUSL_URI=armv7m-linux-musleabi-cross
-                ;;   
+                ;;
               arm-unknown-linux-musleabihf)
                 MUSL_URI=arm-linux-musleabihf-cross
-                ;;    
+                ;;
               arm-unknown-linux-musleabi)
                 MUSL_URI=arm-linux-musleabi-cross
-                ;;        
+                ;;
               mips-unknown-linux-musl)
                 MUSL_URI=mips-linux-muslsf-cross
                 URL=mips-linux-muslsf
                 ;;
-              i686-unknown-linux-musl)
-                MUSL_URI=i686-linux-musl-cross
-                ;;
             esac
-          
-            if [  -n "$MUSL_URI" ]; then
+            if [[ ! -z $MUSL_URI ]]; then
               mkdir -p /opt/musl_gcc 
               wget -c https://musl.cc/$MUSL_URI.tgz -P /opt/musl_gcc/
               tar zxf /opt/musl_gcc/$MUSL_URI.tgz -C /opt/musl_gcc/
               sudo ln -s /opt/musl_gcc/$MUSL_URI/bin/*gcc /usr/bin/
             fi
           else
-              rustup install 1.80
-              rustup default 1.80
+              rustup install 1.82
+              rustup default 1.82
           fi
           if [[ $TARGET =~ ^mips.*$ ]]; then
               # mips平台使用nightly版本
               cd /opt/musl_gcc/${URL}-cross/lib/gcc/${URL}/11.2.1
-              cp libgcc_eh.a libunwind.a
-              rustup toolchain install nightly-x86_64-unknown-linux-gnu
-              rustup component add rust-src --toolchain nightly-x86_64-unknown-linux-gnu
+              sudo cp crtbegin.o crtbeginS.o
+              sudo cp crtend.o crtendS.o
+              rustup install nightly
+              rustup default nightly
               RUST_LIB_SRC=$HOME/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/
               if [[ -f $RUST_LIB_SRC/library/Cargo.lock && ! -f $RUST_LIB_SRC/Cargo.lock ]]; then 
                  cp -f $RUST_LIB_SRC/library/Cargo.lock $RUST_LIB_SRC/Cargo.lock
               fi 
           else
-              rustup install 1.80
-              rustup default 1.80
+              rustup install 1.82
+              rustup default 1.82
           fi
           rustup -V
           
@@ -238,30 +235,32 @@ jobs:
           mkdir -p ./artifacts
           # windows is the only OS using a different convention for executable file name
           if [[ $OS =~ ^windows.*$ ]]; then
-              EXEC_VNT_CLI=vnt-cli.exe
-              EXEC_VN_LINK_CLI=vn-link-cli.exe
+              EXEC=$NAME.exe
+              EXEC_VN_LINK=vn-link-cli.exe
           else
-              EXEC_VNT_CLI=vnt-cli
-              EXEC_VN_LINK_CLI=vn-link-cli
+              EXEC=$NAME
+              EXEC_VN_LINK=vn-link-cli
           fi
           if [[ $GITHUB_REF_TYPE =~ ^tag$ ]]; then
             TAG=$GITHUB_REF_NAME
           else
             TAG=$GITHUB_SHA
           fi
-          mv ./target/$TARGET/release/$EXEC_VNT_CLI ./artifacts/$EXEC_VNT_CLI
-          mv ./target/$TARGET/release/$EXEC_VN_LINK_CLI ./artifacts/$EXEC_VN_LINK_CLI
-          mv ./README ./artifacts/README.txt
-          cd ./artifacts
-          tar -czf vnt-$TARGET-$TAG.tar.gz *
-          mkdir upload_file
-          mv vnt-$TARGET-$TAG.tar.gz ./upload_file/
+          mv ./target/$TARGET/release/$EXEC ./$EXEC
+          mv ./target/$TARGET/release/$EXEC_VN_LINK ./$EXEC_VN_LINK
+          tar -czf ./artifacts/$NAME-$TARGET-$TAG.tar.gz $EXEC $EXEC_VN_LINK
+          if [[ $OS =~ ^windows.*$ ]]; then
+            certutil -hashfile ./artifacts/$NAME-$TARGET-$TAG.tar.gz sha256 | grep -E [A-Fa-f0-9]{64} > ./artifacts/$NAME-$TARGET-$TAG.sha256
+          else
+            shasum -a 256 ./artifacts/$NAME-$TARGET-$TAG.tar.gz > ./artifacts/$NAME-$TARGET-$TAG.sha256
+          fi
       - name: Archive artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vnt-cli-${{ matrix.TARGET }}
+          name: result-${{ matrix.TARGET }}
           path: |
-            ./artifacts/upload_file
+            ./artifacts
+
   # deploys to github releases on tag
   deploy:
     if: startsWith(github.ref, 'refs/tags/')
@@ -271,14 +270,11 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
+          merge-multiple: true
           path: ./artifacts
       - name: List
         run: find ./artifacts
       - name: Release
-        uses: svenstaro/upload-release-action@v2
+        uses: softprops/action-gh-release@v2
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./artifacts/**/*.tar.gz
-          tag: ${{ github.ref }}
-          overwrite: true
-          file_glob: true
+          files: ./artifacts/*.tar.gz,./artifacts/*.sha256
