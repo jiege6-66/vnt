@@ -100,9 +100,10 @@ features说明
 
 - Mac
 - Linux
-- Windows
+- Windows (x86, x64, ARM64)
     - 默认使用tun网卡 依赖wintun.dll([win-tun](https://www.wintun.net/))(将dll放到同目录下，建议使用版本0.14.1)
     - 可选择使用tap网卡 依赖tap-windows([win-tap](https://build.openvpn.net/downloads/releases/))(建议使用版本9.24.7)
+    - ARM64 支持：适用于 Windows on ARM 设备
 - Android
 
 ### GUI
