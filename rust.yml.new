@@ -114,7 +114,7 @@ jobs:
           if [[ $OS =~ ^ubuntu.*$ ]]; then
             sudo apt-get update && sudo apt-get install clang llvm libc6-dev-i386 crossbuild-essential-arm64 crossbuild-essential-armhf musl-tools libboost-all-dev libc6-dev -y
             #  curl -s musl.cc | grep mipsel
-            case $TARGET in [
+            case $TARGET in
               mipsel-unknown-linux-musl)
                 MUSL_URI=mipsel-linux-muslsf-cross
                 URL=mipsel-linux-muslsf
