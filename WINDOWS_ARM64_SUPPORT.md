@@ -8,7 +8,11 @@ This document describes the changes needed to add Windows ARM64 (aarch64-pc-wind
 - Updated the supported platforms section to explicitly mention Windows ARM64 support
 - Added note about compatibility with Windows on ARM devices
 
-### 2. GitHub Actions Workflow Changes Required
+### 2. Cargo.lock Compatibility Fix
+- Removed incompatible Cargo.lock file (will be regenerated during build)
+- This fixes the "lock file version 4" error
+
+### 3. GitHub Actions Workflow Changes Required
 
 The following changes need to be made to `.github/workflows/rust.yml`:
 
@@ -66,8 +70,34 @@ rustflags = ["-C", "target-feature=+crt-static","-C", "strip=symbols"]
 [target.i686-pc-windows-msvc]
 rustflags = ["-C", "target-feature=+crt-static","-C", "strip=symbols"]      
 [target.aarch64-pc-windows-msvc]
-rustflags = ["-C", "target-feature=+crt-static","-C", "strip=symbols"]      
+rustflags = ["-C", "target-feature=+crt-static","-C", "strip=symbols"]
 [target.x86_64-apple-darwin]
+```
+
+**Additional Fix Required**: Update Rust version from 1.77 to 1.80 in two places:
+
+**Line 150-151 change from:**
+```yaml
+rustup install 1.77
+rustup default 1.77
+```
+
+**To:**
+```yaml
+rustup install 1.80
+rustup default 1.80
+```
+
+**Line 164-165 change from:**
+```yaml
+rustup install 1.77
+rustup default 1.77
+```
+
+**To:**
+```yaml
+rustup install 1.80
+rustup default 1.80
 ```
 
 ## Technical Details
