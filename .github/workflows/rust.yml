@@ -73,6 +73,9 @@ jobs:
           - TARGET: x86_64-pc-windows-msvc # tested on a windows machine
             OS: windows-latest
             FEATURES: ring-cipher,wss
+          - TARGET: aarch64-pc-windows-msvc # Windows ARM64 support
+            OS: windows-latest
+            FEATURES: ring-cipher,wss
           - TARGET: mipsel-unknown-linux-musl # openwrt
             OS: ubuntu-latest
             FEATURES: ring-cipher,wss
@@ -200,6 +203,8 @@ jobs:
           [target.x86_64-pc-windows-msvc]
           rustflags = ["-C", "target-feature=+crt-static","-C", "strip=symbols"]    
           [target.i686-pc-windows-msvc]
+          rustflags = ["-C", "target-feature=+crt-static","-C", "strip=symbols"]      
+          [target.aarch64-pc-windows-msvc]
           rustflags = ["-C", "target-feature=+crt-static","-C", "strip=symbols"]      
           [target.x86_64-apple-darwin]
           rustflags = ["-C", "target-feature=+crt-static","-C", "strip=symbols"] 
