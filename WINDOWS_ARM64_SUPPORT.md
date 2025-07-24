@@ -74,7 +74,7 @@ rustflags = ["-C", "target-feature=+crt-static","-C", "strip=symbols"]
 [target.x86_64-apple-darwin]
 ```
 
-**Additional Fix Required**: Update Rust version from 1.77 to 1.80 in two places:
+**Additional Fix Required**: Update Rust version from 1.77 to 1.82 in two places:
 
 **Line 150-151 change from:**
 ```yaml
@@ -84,8 +84,8 @@ rustup default 1.77
 
 **To:**
 ```yaml
-rustup install 1.80
-rustup default 1.80
+rustup install 1.82
+rustup default 1.82
 ```
 
 **Line 164-165 change from:**
@@ -96,9 +96,11 @@ rustup default 1.77
 
 **To:**
 ```yaml
-rustup install 1.80
-rustup default 1.80
+rustup install 1.82
+rustup default 1.82
 ```
+
+**Note**: The version needs to be 1.82 or later to support the `edition2024` feature required by some dependencies.
 
 ## Technical Details
 
